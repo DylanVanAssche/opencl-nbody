@@ -17,8 +17,6 @@
 \usepackage{hyperref}
 % Manipulate floating
 \usepackage{float}
-% Gantt chart
-\usepackage{pgfgantt}
 % Dutch spellcheck
 % https://www.spelling.nu/
 \usepackage{listings}
@@ -42,16 +40,16 @@
 \section{Testomgeving}
 \subsection{Compilatieproblemen}
 
-Door het gebruik van verouderde packages zat er een bug in het \texttt{GLM} package wat
-ervoor zorgde dat de code niet gecompileerd kon worden in onze testomgeving. Na het
-bijwerken van \texttt{GLM} waren de problemen van de baan.
+De \texttt{GLM} package gaf bij compiletime een error wat
+ervoor zorgde dat de code niet gecompileerd kon worden in onze testomgeving. 
+Een update heeft dit probleem gelukkig verholpen.
 
 \subsection{Hardware}
 \begin{itemize}
-    \item CPU
-    \item GPU
-    \item RAM
-    \item OS
+    \item CPU: Intel(R) Core(TM) i7-4790 CPU @ 3.60Ghz
+    \item GPU: Nvidia GTX 970
+    \item RAM: 8GiB DDR3 @ 1866MHz
+    \item OS: Fedora KDE Plasma
 \end{itemize}
 
 %----------------------------------------------------------------------------------------
@@ -161,15 +159,16 @@ categorie. Deze gemiddelden worden dan uitgezet op een aantal grafieken welke
 hieronder zullen worden besproken.
 
 \subsection{5 lichamen}
-
+\includegraphics[width=\textwidth]{grafiekskes/hist_simulation5.png}
 \subsection{50 lichamen}
-
+\includegraphics[width=\linewidth]{grafiekskes/hist_simulation50.png}
 \subsection{500 lichamen}
-
+\includegraphics[width=\linewidth]{grafiekskes/hist_simulation500.png}
 \subsection{5 000 lichamen}
-
+\includegraphics[width=\linewidth]{grafiekskes/hist_simulation5000.png}
 \subsection{50 000 lichamen}
-
+opm: als de tijd gelijk is aan nul, betekent dit dat het programma weigerde te starten.
+\includegraphics[width=\linewidth]{grafiekskes/hist_simulation50000.png}
 \subsection{500 000 lichamen}
 CPU faalt!
 
