@@ -33,7 +33,6 @@
 \author{Vandevelde,~Simon~(\texttt{simon.vandevelde@student.kuleuven.be})
   \and
   Van~Assche,~Dylan~(\texttt{dylan.vanassche@student.kuleuven.be})}
-
 \begin{document}
 \maketitle %Create title
 
@@ -59,8 +58,12 @@ bijwerken van \texttt{GLM} waren de problemen van de baan.
 %	SECTION 2: CHANGES
 %----------------------------------------------------------------------------------------
 \section{OpenCL aanpassingen}
-\subsection{for-lus 1}
-\begin{lstlisting}[breaklines=true]
+\subsection{Eerste for-lus}
+De eerste for-lus, die we geparalleliseerd hebben, berekent de nieuwe snelheid van een lichaam.
+Hiervoor moet de host de positie en snelheden data overbrengen naar de GPU, wachten tot de GPU
+klaar is en dan de nieuwe snelheden ophalen van de GPU.
+
+\begin{lstlisting}[caption={De eerste for-lus}, label={code:for1}, breaklines=true, basicstyle=\footnotesize]
 for (int i = 0; i < length; ++i)
 {
     for (int j = 0; j < length; ++j)
@@ -98,8 +101,13 @@ for (int i = 0; i < length; ++i)
 }
 \end{lstlisting}
 
-\subsection{for-lus 2}
-\begin{lstlisting}[breaklines=true]
+\subsection{Tweede for-lus}
+De tweede for-lus, die we geparalleliseerd hebben, berekent de nieuwe positie
+van elk lichaam. Hiervoor zal de host eerst de positie en snelheden overdragen
+naar de GPU, wachten tot de GPU klaar is en dan de nieuwe positie data ophalen
+van de GPU.
+
+\begin{lstlisting}[caption={De tweede for-lus}, label={code:for2}, breaklines=true, basicstyle=\footnotesize]
 for(int i = 0; i < length; ++i)
 {
     host_pos[i].s[0] += (host_speed[i].s[0] * delta_time) / distance_to_nearest_star;
@@ -108,19 +116,39 @@ for(int i = 0; i < length; ++i)
 }
 \end{lstlisting}
 
-\subsection{for-lus 1 + 2}
-\begin{lstlisting}[breaklines=true]
-for(int i = 0; i < length; ++i)
-{
-    host_pos[i].s[0] += (host_speed[i].s[0] * delta_time) / distance_to_nearest_star;
-    host_pos[i].s[1] += (host_speed[i].s[1] * delta_time) / distance_to_nearest_star;
-    host_pos[i].s[2] += (host_speed[i].s[2] * delta_time) / distance_to_nearest_star;
-}
-\end{lstlisting}
+\subsection{Atomische variant van de eerste for-lus}
+Omdat het algoritme in for-lus \ref{code:for1} de afstand bepaalt
+tussen twee lichamen krijgen we een \textit{race conditie}. Het probleem situeert
+zich bij het feit dat een GPU processor de positie van lichaam A en lichaam B moet
+lezen om de afstand van lichaam B tot lichaam A te vinden. De kans bestaat dat een
+andere GPU processor net de positie van lichaam A aan het wijzigen is terwijl deze
+net ingelezen wordt. Het gevolg hiervan is dat de waarden verschillen per keer dat
+we het programma uitvoeren.
 
-\subsection{for-lus 1 atomisch}
+We kunnen dit omzeilen door gebruik te maken van \textit{atomische operaties}.
+Hierbij wacht een processor met het inlezen van een geheugenplaats als een andere
+processor net naar deze geheugenplaats aan het schrijven is en omgekeerd. Een
+nadeel van deze methode is dat de performantie zal dalen omdat de processor blijft
+wachten tot een andere processor klaar is met zijn dataoverdracht.
 
-\subsection{for-lus 1 + 2 met afstanden}
+\subsection{Combinatie van beide for-lussen}
+\label{hfd:combinatie-lussen}
+Hierbij hebben we de twee bovenstaande for-lussen (atomische for-lus \ref{code:for1} en for-lus \ref{code:for2}) gecombineerd tot \'{e}\'{e}n
+OpenCL programma. Beide lussen staan nog steeds in een aparte kernel. Indien we
+deze nog zouden combineren tot \'{e}\'{e}n kernel zouden we waarschijnlijk de
+performantie nog kunnen verbeteren (zie \ref{hfd:dataoverdrachten}).
+
+\subsection{Afstanden}
+Een extra uitbreiding aan het programma was het opvragen van de afstanden tussen
+elk lichaam en de andere lichamen:
+
+\begin{itemize}
+    \item Gemiddelde afstand
+    \item Minimale afstand
+    \item Maximale afstand
+\end{itemize}
+
+
 
 %----------------------------------------------------------------------------------------
 %	SECTION 3: RESULTS
@@ -154,30 +182,37 @@ gebruik te maken van nog enkele OpenCL functies en ontwerppatronen. Deze werden
 niet ge\"{i}mplementeerd wegens tijdsgebrek.
 
 \subsection{Minder dataoverdrachten}
-Het programma kopieert nu telkens per kernel de data van de host naar de GPU en
-omgekeerd. Dit resulteert in 4 dataoverdrachten omdat beide for-lussen draaien
-als een aparte kernel.
+\label{hfd:dataoverdrachten}
+Het programma kopieert nu telkens per OpenCL kernel de data van de host naar de GPU en
+omgekeerd. Dit resulteert in vier dataoverdrachten, wat erg veel nutteloze
+overhead is, omdat beide for-lussen draaien als een aparte kernel.
 
-We zouden de for-lussen kunnen overzetten in 1 kernel waardoor de dataoverdrachten
-worden gereduceerd tot slechts 2 overdrachten.
-
-\subsection{Lokaal geheugen}
-Momenteel maakt het programma gebruik van globaal geheugen in de GPU. Elke processor
-kan aan de hele dataset. Beter gezegd: het geheugen is volledig gedeeld onder elke
-processor. Hierdoor staat dit globaal geheugen verder weg van de processor kern
-en duurt het dus langer vooraleer de data arriveert bij de processor.
-
-Als we gebruik maken van het lokaal geheugen van een werkgroep kunnen we dit probleem
-voorkomen. Maar dit vereist tevens ook dat we de berekeningen zodanig opsplitsen
-zodat ze in een werkgroep passen en geen invloed hebben elkaar, hierover later
-meer in paragraaf \ref{hfd:werkgroepen}.
+We zouden de for-lussen kunnen overzetten in \'{e}\'{e}n kernel waardoor de dataoverdrachten
+worden gereduceerd tot slechts twee overdrachten.
 
 \subsection{Effici\"{e}nt opsplitsen in werkgroepen}
 \label{hfd:werkgroepen}
 Beide for-lussen worden simpel weg op de GPU uitgevoerd zonder dat het algoritme
-geoptimaliseerd werd voor parrallelisme op de GPU.
+geoptimaliseerd werd voor parrallelisme op de GPU. Dit resulteert in een slechter
+gebruik van het geheugen (globaal i.p.v. lokaal) waardoor de berekeningen trager
+kunnen verlopen door het geheugen bottleneck.
+
+Elke processor kan aan de hele dataset. Beter gezegd: het geheugen is volledig
+gedeeld onder elke processor. Hierdoor staat dit globaal geheugen verder weg
+van de processor kern en duurt het dus langer vooraleer de data arriveert bij
+de processor.
+
+Als we gebruik maken van het lokaal geheugen van een werkgroep kunnen we dit probleem
+voorkomen. Maar dit vereist tevens ook dat we de berekeningen zodanig kunnen opsplitsen
+zodat ze in een werkgroep passen.
 
 \subsection{Coalesced memory access}
+Indien we het programma zouden optimaliseren om zijn geheugentoegangen te limiteren
+tot zijn buren kunnen we een hogere snelheid halen omdat de naburige werkitems
+sneller toegankelijk zijn dan werkitems die aan de andere kant van de GPU liggen.
+Maar dit vereist opnieuw een ingreep op het algoritme zoals reeds besproken in
+\ref{hfd:werkgroepen}, welke iets uitgebreider is omdat men rekening moet houden
+met de buren van elk workitem.
 
 %----------------------------------------------------------------------------------------
 %	SECTION 5: CONCLUSION
