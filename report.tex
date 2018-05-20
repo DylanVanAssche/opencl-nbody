@@ -129,7 +129,9 @@ We kunnen dit omzeilen door gebruik te maken van \textit{atomische operaties}.
 Hierbij wacht een processor met het inlezen van een geheugenplaats als een andere
 processor net naar deze geheugenplaats aan het schrijven is en omgekeerd. Een
 nadeel van deze methode is dat de performantie zal dalen omdat de processor blijft
-wachten tot een andere processor klaar is met zijn dataoverdracht.
+wachten tot een andere processor klaar is met zijn dataoverdracht. OpenCL ondersteunt
+dit niet rechtstreeks maar via een omweg (via een \texttt{union}) kunnen we toch
+gebruik maken van \textit{atomische operaties}.
 
 \subsection{Combinatie van beide for-lussen}
 \label{hfd:combinatie-lussen}
@@ -147,8 +149,6 @@ elk lichaam en de andere lichamen:
     \item Minimale afstand
     \item Maximale afstand
 \end{itemize}
-
-
 
 %----------------------------------------------------------------------------------------
 %	SECTION 3: RESULTS
