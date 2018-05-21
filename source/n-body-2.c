@@ -19,7 +19,7 @@ void usage(char* prog_name)
     printf("Usage: %s <number of bodies>\n", prog_name);
 }
 
-// Make a buffer on the GPU to provide access to the image
+//buffer op de GPU maken om data in op te slaan
 cl_mem makeBufferOnGPU(int length)
 {
 	// Error code
@@ -42,6 +42,8 @@ cl_mem makeBufferOnGPU(int length)
     return buffer;
 }
 
+//kernel en cl_int error meegeven omdat we de tweede lus vervangen door berekening op de GPU
+//LET OP: racecondities! Eigenlijk helemaal fout omdat we niet met atomische operaties werken
 void simulate_gravity(cl_float3* host_pos, cl_float3* host_speed, cl_mem gpu_pos, cl_mem gpu_speed,cl_kernel kernel, int length,cl_int error)
 {
     const float delta_time = 1.f;
@@ -92,23 +94,23 @@ void simulate_gravity(cl_float3* host_pos, cl_float3* host_speed, cl_mem gpu_pos
 
 	// Set kernel arguments: 2 pointers naar buffers, 1 lengte
 	int arg_num = 0;
-	ocl_err(clSetKernelArg(kernel, arg_num++, sizeof(cl_mem), &gpu_pos));
-	ocl_err(clSetKernelArg(kernel, arg_num++, sizeof(cl_mem), &gpu_speed));
+	ocl_err(clSetKernelArg(kernel, arg_num++, sizeof(cl_mem), &gpu_pos)); //errorcatching
+	ocl_err(clSetKernelArg(kernel, arg_num++, sizeof(cl_mem), &gpu_speed)); //errorcatching
 
-	ocl_err(clEnqueueWriteBuffer(g_command_queue, gpu_pos, CL_TRUE, 0, sizeof(cl_float3) * length,host_pos, 0, NULL, NULL)); // enkel speed buffer aangepast
-	ocl_err(clEnqueueWriteBuffer(g_command_queue, gpu_speed, CL_TRUE, 0, sizeof(cl_float3) * length,host_speed, 0, NULL, NULL));
+	ocl_err(clEnqueueWriteBuffer(g_command_queue, gpu_pos, CL_TRUE, 0, sizeof(cl_float3) * length,host_pos, 0, NULL, NULL)); // host_pos overzetten naar de versgemaakte buffer gpu_pos
+	ocl_err(clEnqueueWriteBuffer(g_command_queue, gpu_speed, CL_TRUE, 0, sizeof(cl_float3) * length,host_speed, 0, NULL, NULL)); //host_speed overzetten naar de versgemaakte buffer gpu_speed
 
-	// Call kernel 1D
+	// Call kernel 2D
 	size_t global_work_sizes[] = {length,length};
 	time_measure_start("computation"); 
-	ocl_err(clEnqueueNDRangeKernel(g_command_queue, kernel, DIMENSION, NULL, global_work_sizes, NULL, 0, NULL, NULL));
+	ocl_err(clEnqueueNDRangeKernel(g_command_queue, kernel, DIMENSION, NULL, global_work_sizes, NULL, 0, NULL, NULL)); //GPU doen rekenen
 	ocl_err(clFinish(g_command_queue));
 	printf("c:");
 	time_measure_stop_and_print("computation");
 
 	// Read result
 	time_measure_start("data_transfer");
-	ocl_err(clEnqueueReadBuffer(g_command_queue, gpu_speed, CL_TRUE, 0, sizeof(cl_float3) * length, host_speed, 0, NULL, NULL));
+	ocl_err(clEnqueueReadBuffer(g_command_queue, gpu_speed, CL_TRUE, 0, sizeof(cl_float3) * length, host_speed, 0, NULL, NULL)); //data terug uitlezen
 	printf("d:");
 	time_measure_stop_and_print("data_transfer");
 
@@ -144,7 +146,7 @@ int main(int argc, char** argv) {
     cl_float3 *host_pos = malloc(sizeof(cl_float3) * length);
     cl_float3 *host_speed = malloc(sizeof(cl_float3) * length);	
 	cl_mem gpu_pos = makeBufferOnGPU(length);
-	cl_mem gpu_speed = makeBufferOnGPU(length);	//maken GPU buffers
+	cl_mem gpu_speed = makeBufferOnGPU(length);	//maken pos en speed buffers op de GPU
     for (int i = 0; i < length; ++i)
     {
         float offset;
@@ -169,7 +171,7 @@ int main(int argc, char** argv) {
     {
         is_done = render_point_cloud(host_pos, length);
         time_measure_start("simulation step");
-        simulate_gravity(host_pos, host_speed, gpu_pos, gpu_speed, kernel, length, error);
+        simulate_gravity(host_pos, host_speed, gpu_pos, gpu_speed, kernel, length, error);	//kernel en error meegeven aan simulate_gravity
 	printf("s:");
         time_measure_stop_and_print("simulation step");
     }

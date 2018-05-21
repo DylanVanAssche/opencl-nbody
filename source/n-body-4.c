@@ -20,7 +20,7 @@ void usage(char* prog_name)
     printf("Usage: %s <number of bodies>\n", prog_name);
 }
 
-// Make a buffer on the GPU to provide access to the image
+//Functie om buffers op de GPU te maken
 cl_mem makeBufferOnGPU(int length)
 {
 	// Error code
@@ -43,6 +43,8 @@ cl_mem makeBufferOnGPU(int length)
     return buffer;
 }
 
+//kernel en cl_int error meegeven omdat we de tweede for-lus vervangen door berekeningen op de GPU
+//maar dan atomisch! Hoewel dit helemaal niet nodig is, aangezien er geen racecondities plaatsvinden
 void simulate_gravity(cl_float3* host_pos, cl_float3* host_speed, cl_mem gpu_pos, cl_mem gpu_speed,cl_kernel kernel, int length,cl_int error)
 {
     const float delta_time = 1.f;
@@ -105,20 +107,20 @@ void simulate_gravity(cl_float3* host_pos, cl_float3* host_speed, cl_mem gpu_pos
     ocl_err(clSetKernelArg(kernel, arg_num++, sizeof(cl_mem), &gpu_pos));
 	ocl_err(clSetKernelArg(kernel, arg_num++, sizeof(cl_mem), &gpu_speed));
 
-    ocl_err(clEnqueueWriteBuffer(g_command_queue, gpu_pos, CL_TRUE, 0, sizeof(cl_float3) * length,host_pos, 0, NULL, NULL));
+    ocl_err(clEnqueueWriteBuffer(g_command_queue, gpu_pos, CL_TRUE, 0, sizeof(cl_float3) * length,host_pos, 0, NULL, NULL)); //host_pos en host_speed overzetten  naar de GPU (in gpu_pos en gpu_speed)
     ocl_err(clEnqueueWriteBuffer(g_command_queue, gpu_speed, CL_TRUE, 0, sizeof(cl_float3) * length,host_speed, 0, NULL, NULL));
 
     // Call kernel 1D
     size_t global_work_sizes[] = {length};
     time_measure_start("computation"); 
-    ocl_err(clEnqueueNDRangeKernel(g_command_queue, kernel, DIMENSION_1D, NULL, global_work_sizes, NULL, 0, NULL, NULL));
+    ocl_err(clEnqueueNDRangeKernel(g_command_queue, kernel, DIMENSION_1D, NULL, global_work_sizes, NULL, 0, NULL, NULL)); //kernel doen uitrekenen op de GPU
     ocl_err(clFinish(g_command_queue));
     printf("c:");
     time_measure_stop_and_print("computation");
 
     // Read result
     time_measure_start("data_transfer");
-    ocl_err(clEnqueueReadBuffer(g_command_queue, gpu_pos, CL_TRUE, 0, sizeof(cl_float3) * length, host_pos, 0, NULL, NULL));
+    ocl_err(clEnqueueReadBuffer(g_command_queue, gpu_pos, CL_TRUE, 0, sizeof(cl_float3) * length, host_pos, 0, NULL, NULL)); //uit de gpu uitlezen
     printf("d:");
     time_measure_stop_and_print("data_transfer");
 }
@@ -143,10 +145,10 @@ int main(int argc, char** argv) {
     //cl_kernel kernel = clCreateKernel(g_program, "calc_speed", &error);
     init_gl();
 
-    cl_float3 *host_pos = malloc(sizeof(cl_float3) * length);
+    cl_float3 *host_pos = malloc(sizeof(cl_float3) * length);	//alloceren van de geheugenruimte voor host_pos & host_speed
     cl_float3 *host_speed = malloc(sizeof(cl_float3) * length);	
-	cl_mem gpu_pos = makeBufferOnGPU(length);
-	cl_mem gpu_speed = makeBufferOnGPU(length);	//maken GPU buffers
+	cl_mem gpu_pos = makeBufferOnGPU(length);	//aanmaken van de nodige buffers op de GPU
+	cl_mem gpu_speed = makeBufferOnGPU(length);	
     for (int i = 0; i < length; ++i)
     {
         float offset;
