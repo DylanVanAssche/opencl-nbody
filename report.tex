@@ -164,6 +164,21 @@ alle timestamps inleest en het gemiddelde neemt van de 100 eerste metingen per
 categorie. Deze gemiddelden worden dan uitgezet op een aantal grafieken welke
 hieronder zullen worden besproken.
 
+Op de x-as van de volgende grafieken staat steeds het gebruikte programma en
+de gebruikte kernel.
+\begin{enumerate}
+ \setcounter{enumi}{-1}
+ \item De waarden gemeten bij de cpu. Hier is enkel de simulationtijd kunnen gemeten worden.
+ \item Deze vervangt de tweede for-lus, en doet dit niet atomisch.
+ \item Deze vervangt de eerste for-lus, en doet dit ook niet atomisch. Dit zorgt voor
+ racecondities waardoor dit programma eigenlijk niet betrouwbaar is
+ \item Deze vervangt de eerste for-lus, maar doet dit wel atomisch.
+ \item Deze vervangt de tweede for-lus door een atomische variant, hoewel dit helemaal niet
+ nodig is aangezien er geen racecondities zijn in deze lus.
+ \item Deze zet beide atomische versies (for-lus 1 \& for-lus 0) samen.
+ \end{enumerate}
+
+
 \subsection{5 lichamen}
 \textit{Opmerking}: Als de tijd gelijk is aan nul, betekent dit de tijd zo klein is dat deze niet gemeten kon worden.
 \\
@@ -192,9 +207,16 @@ om de gravitatie te simuleren dan de CPU.
 \includegraphics[width=\linewidth]{grafiekskes/hist_simulation500.png}
 \subsection{5 000 lichamen}
 \includegraphics[width=\linewidth]{grafiekskes/hist_simulation5000.png}
+\includegraphics[width=\linewidth]{grafiekskes/hist_transfer5000.png}
 \subsection{50 000 lichamen}
 \textit{Opmerking}: Als de tijd gelijk is aan nul, betekent dit dat het programma weigerde te starten.
 \includegraphics[width=\linewidth]{grafiekskes/hist_simulation50000.png}
+\includegraphics[width=\linewidth]{grafiekskes/hist_transfer50000.png}
+
+Hier is heel duidelijk ook hoeveel impact de transfersnelheid heeft op het programma.
+Tussen 5000 en 50000 bodies is de transfertijd soms 5 keer groter.
+\subsection{500 000 lichamen}
+CPU faalt!
 
 %----------------------------------------------------------------------------------------
 %	SECTION 4: IMPROVEMENTS

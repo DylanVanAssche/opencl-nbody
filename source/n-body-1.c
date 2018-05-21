@@ -23,7 +23,7 @@ void usage(char* prog_name)
     printf("Usage: %s <number of bodies>\n", prog_name);
 }
 
-// Make a buffer on the GPU to provide access to the image
+// Buffer maken op de GPU om data in op te slaan
 cl_mem makeBufferOnGPU(int length)
 {
 	// Error code
@@ -46,6 +46,7 @@ cl_mem makeBufferOnGPU(int length)
     return buffer;
 }
 
+//met tweede for-lus geparallelliseerd
 void simulate_gravity(cl_float3* host_pos, cl_float3* host_speed, cl_mem gpu_pos, cl_mem gpu_speed,cl_kernel kernel, int length,cl_int error)
 {
     // FOR LUS 1
@@ -88,12 +89,12 @@ void simulate_gravity(cl_float3* host_pos, cl_float3* host_speed, cl_mem gpu_pos
             host_speed[i].s[0] += acc_x * delta_time;
             host_speed[i].s[1] += acc_y * delta_time;
             host_speed[i].s[2] += acc_z * delta_time;
-
+	
+	}
+	}
 	    // Create kernel
 	    ocl_err(error);
 
-	}
-	}
 
     /*
     FOR LUS 2
