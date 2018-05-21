@@ -45,10 +45,6 @@ cl_mem makeBufferOnGPU(int length)
 void simulate_gravity(cl_float3* host_pos, cl_float3* host_speed, cl_mem gpu_pos, cl_mem gpu_speed,cl_kernel kernel, int length,cl_int error)
 {
     const float delta_time = 1.f;
-    // const float grav_constant = 6.67428e-11;
-    const float grav_constant = 1;
-    const float mass_of_sun = 2;
-    const float mass_grav = grav_constant * mass_of_sun * mass_of_sun;
     const float distance_to_nearest_star = 50;
 
  /* FOR LUS 1
