@@ -44,6 +44,7 @@ cl_mem makeBufferOnGPU(int length)
 
 void simulate_gravity(cl_float3* host_pos, cl_float3* host_speed, cl_mem gpu_pos, cl_mem gpu_speed,cl_kernel kernel, int length,cl_int error)
 {
+    // FOR LUS 1
     const float delta_time = 1.f;
     // const float grav_constant = 6.67428e-11;
     const float grav_constant = 1;
@@ -90,7 +91,10 @@ void simulate_gravity(cl_float3* host_pos, cl_float3* host_speed, cl_mem gpu_pos
 	}
 	}
 
-    /*for (int i = 0; i < length; ++i)
+    /*
+    FOR LUS 2
+
+    for (int i = 0; i < length; ++i)
     {
         host_pos[i].s[0] += (host_speed[i].s[0] * delta_time) / distance_to_nearest_star;
         host_pos[i].s[1] += (host_speed[i].s[1] * delta_time) / distance_to_nearest_star;
