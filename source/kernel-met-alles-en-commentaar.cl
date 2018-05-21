@@ -1,3 +1,8 @@
+/*
+Simon Vandevelde, Dylan Van Assche
+Kernel met alle commentaar van de 5 OpenCL programma's
+*/
+
 #define DELTA_TIME 1.f
 #define DISTANCE_TO_NEAREST_STAR 50
 #define GRAV_CONSTANT 1

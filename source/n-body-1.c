@@ -1,3 +1,7 @@
+/*
+Simon Vandevelde, Dylan Van Assche
+2de for lus parralleliseren zonder atomische operaties
+*/
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

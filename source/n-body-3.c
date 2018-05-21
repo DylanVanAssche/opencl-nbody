@@ -1,3 +1,7 @@
+/*
+Simon Vandevelde, Dylan Van Assche
+1ste for lus parralleliseren met atomische operaties voor race condities
+*/
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
