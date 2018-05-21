@@ -1,3 +1,7 @@
+/*
+Simon Vandevelde, Dylan Van Assche
+1ste for lus parralleliseren met atomische operaties voor race condities
+*/
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -29,8 +33,8 @@ cl_mem makeBufferOnGPU(int length)
     cl_mem buffer = clCreateBuffer(
 			g_context,
             CL_MEM_READ_WRITE,
-            sizeof(cl_float3) * length, 
-			NULL, 
+            sizeof(cl_float3) * length,
+			NULL,
 			&error
 		);
 
@@ -45,13 +49,10 @@ cl_mem makeBufferOnGPU(int length)
 void simulate_gravity(cl_float3* host_pos, cl_float3* host_speed, cl_mem gpu_pos, cl_mem gpu_speed,cl_kernel kernel, int length,cl_int error)
 {
     const float delta_time = 1.f;
-    // const float grav_constant = 6.67428e-11;
-    const float grav_constant = 1;
-    const float mass_of_sun = 2;
-    const float mass_grav = grav_constant * mass_of_sun * mass_of_sun;
     const float distance_to_nearest_star = 50;
 
- /*  for (int i = 0; i < length; ++i)
+ /* FOR LUS 1
+    for (int i = 0; i < length; ++i)
     {
         for (int j = 0; j < length; ++j)
         {
@@ -95,27 +96,25 @@ void simulate_gravity(cl_float3* host_pos, cl_float3* host_speed, cl_mem gpu_pos
 	ocl_err(clSetKernelArg(kernel, arg_num++, sizeof(cl_mem), &gpu_pos));
 	ocl_err(clSetKernelArg(kernel, arg_num++, sizeof(cl_mem), &gpu_speed));
 
+    // Kopieer buffers
 	ocl_err(clEnqueueWriteBuffer(g_command_queue, gpu_pos, CL_TRUE, 0, sizeof(cl_float3) * length,host_pos, 0, NULL, NULL)); // Enkel speed buffer bijgewerkt
 	ocl_err(clEnqueueWriteBuffer(g_command_queue, gpu_speed, CL_TRUE, 0, sizeof(cl_float3) * length,host_speed, 0, NULL, NULL));
 
-	// Call kernel 1D
+	// Call kernel 2D
 	size_t global_work_sizes[] = {length,length};
-	time_measure_start("computation"); 
-	ocl_err(clEnqueueNDRangeKernel(g_command_queue, kernel, DIMENSION, NULL, global_work_sizes, NULL, 0, NULL, NULL));
+	time_measure_start("computation");
+	ocl_err(clEnqueueNDRangeKernel(g_command_queue, kernel, DIMENSION, NULL, global_work_sizes, NULL, 0, NULL, NULL)); // Stuur opdracht naar GPU
 	ocl_err(clFinish(g_command_queue));
 	printf("c:");
 	time_measure_stop_and_print("computation");
 
 	// Read result
 	time_measure_start("data_transfer");
-	ocl_err(clEnqueueReadBuffer(g_command_queue, gpu_speed, CL_TRUE, 0, sizeof(cl_float3) * length, host_speed, 0, NULL, NULL));
+	ocl_err(clEnqueueReadBuffer(g_command_queue, gpu_speed, CL_TRUE, 0, sizeof(cl_float3) * length, host_speed, 0, NULL, NULL)); // Lees GPU data naar host
 	printf("d:");
 	time_measure_stop_and_print("data_transfer");
 
-
-	//EINDE VERVANGING FOR-LUS 1
-
-
+    // FOR LUS 2
     for (int i = 0; i < length; ++i)
     {
         host_pos[i].s[0] += (host_speed[i].s[0] * delta_time) / distance_to_nearest_star;
@@ -132,20 +131,25 @@ int main(int argc, char** argv) {
     }
     int length = atoi(argv[1]);
 
-	cl_platform_id platform = ocl_select_platform();	//GPU gerelateerde zaken
+	cl_platform_id platform = ocl_select_platform(); // Selecteer OpenCL platform en device ID
     cl_device_id device = ocl_select_device(platform);
-    init_ocl(device);
+    init_ocl(device); // maak device ready voor OpenCL
     create_program("kernel.cl", "");
 
+    // Maak een kernel en catch eventuele errors
 	cl_int error;
-   // cl_kernel kernel = clCreateKernel(g_program, "calc_pos", &error);
     cl_kernel kernel = clCreateKernel(g_program, "calc_speed_a", &error);
     init_gl();
 
+    // Alloceer buffers op host
     cl_float3 *host_pos = malloc(sizeof(cl_float3) * length);
-    cl_float3 *host_speed = malloc(sizeof(cl_float3) * length);	
+    cl_float3 *host_speed = malloc(sizeof(cl_float3) * length);
+
+    // Alloceer buffers op GPU
 	cl_mem gpu_pos = makeBufferOnGPU(length);
-	cl_mem gpu_speed = makeBufferOnGPU(length);	//maken GPU buffers
+	cl_mem gpu_speed = makeBufferOnGPU(length);
+
+    // Init host buffers op default values
     for (int i = 0; i < length; ++i)
     {
         float offset;
@@ -165,12 +169,13 @@ int main(int argc, char** argv) {
         host_speed[i].s[2] = 0.f;
     }
 
+    // Blijf uitvoeren tot exit
     int is_done = 0;
     while (!is_done)
     {
-        is_done = render_point_cloud(host_pos, length);
+        is_done = render_point_cloud(host_pos, length); // GUI
         time_measure_start("simulation step");
-        simulate_gravity(host_pos, host_speed, gpu_pos, gpu_speed, kernel, length, error);
+        simulate_gravity(host_pos, host_speed, gpu_pos, gpu_speed, kernel, length, error); // berekenen snelheid, positie, ... van elk lichaam
 	printf("s:");
         time_measure_stop_and_print("simulation step");
     }

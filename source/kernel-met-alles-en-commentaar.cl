@@ -1,3 +1,8 @@
+/*
+Simon Vandevelde, Dylan Van Assche
+Kernel met alle commentaar van de 5 OpenCL programma's
+*/
+
 #define DELTA_TIME 1.f
 #define DISTANCE_TO_NEAREST_STAR 50
 #define GRAV_CONSTANT 1
@@ -8,10 +13,15 @@ typedef union
 {
     float3 vec;	//float3 zoals we hem kennen en liefhebben
     float arr[3]; //'opgesplitse' float3 om hem atomisch te kunnen gebruiken
-} float3_; //is geen verschil in geheugen tov float3! 
+} float3_; //is geen verschil in geheugen tov float3!
 	//daarom kunnen we perfect nog float3 meegeven vanuit host
 
 //functie om atomisch dingen op te tellen, zonder race-condities //is magisch niet kennen
+/*
+atomic_cmpxchg (https://www.khronos.org/registry/OpenCL/sdk/1.2/docs/man/xhtml/atomic_cmpxchg.html)
+Read the 32-bit value (referred to as old) stored at location pointed by p. Compute (old == cmp) ? val : old and store result at location pointed by p. The function returns old.
+A 64-bit version of this function, atom_cmpxchg, is enabled by cl_khr_int64_base_atomics.
+*/
 inline void AtomicAdd(volatile __global float *source, const float operand) {
 	//definieren twee unions, om te gebruiken als variabele en te vergelijken
     union {
@@ -28,30 +38,29 @@ inline void AtomicAdd(volatile __global float *source, const float operand) {
     } while (atomic_cmpxchg((volatile __global unsigned int *)source, prevVal.intVal,newVal.intVal) != prevVal.intVal);
 }
 
-
 //***************kernelcode voor niet-atomische posberekening******************************
 __kernel void calc_pos(__global float3 *gpu_pos, __global float3 *gpu_speed)
 {
 	const int i = get_global_id(0); //neemt de global id van de werkgroep, vervangt teller 'i' van for-lus
 	gpu_pos[i].s0 += (gpu_speed[i].s0 * DELTA_TIME) / DISTANCE_TO_NEAREST_STAR;
-        gpu_pos[i].s1 += (gpu_speed[i].s1 * DELTA_TIME) / DISTANCE_TO_NEAREST_STAR;
-        gpu_pos[i].s2 += (gpu_speed[i].s2 * DELTA_TIME) / DISTANCE_TO_NEAREST_STAR;
-
-
+    gpu_pos[i].s1 += (gpu_speed[i].s1 * DELTA_TIME) / DISTANCE_TO_NEAREST_STAR;
+    gpu_pos[i].s2 += (gpu_speed[i].s2 * DELTA_TIME) / DISTANCE_TO_NEAREST_STAR;
 }
 
-
 //***************kernelcode voor atomische posberekening******************************
+// Atomic adds zijn niet nodig hier want geen race condities!
+// We hebben dit gebruikt om de invloed ervan te testen op de performantie indien we toch atomic add gebruiken.
 __kernel void calc_pos_a(__global float3_ *gpu_pos, __global float3 *gpu_speed)
 {
 	const int i = get_global_id(0); //zie boven
-
 	AtomicAdd(&gpu_pos[i].arr[0], ((float)(gpu_speed[i].s0 * DELTA_TIME)/DISTANCE_TO_NEAREST_STAR)); //gebruiken van atomicadd om atomisch op te tellen
 	AtomicAdd(&gpu_pos[i].arr[1], ((float)(gpu_speed[i].s1 * DELTA_TIME)/DISTANCE_TO_NEAREST_STAR));
 	AtomicAdd(&gpu_pos[i].arr[2], ((float)(gpu_speed[i].s2 * DELTA_TIME)/DISTANCE_TO_NEAREST_STAR));
-
 }
+
 //***************kernelcode voor niet-atomische speedberekening******************************
+// Snelheidsberekening heeft wel race condities, deze kernel benchmarken zal leiden tot
+// foutieve metingen door de race condities, een realitische meting zie atomische versie
 __kernel void calc_speed(__global float3 *gpu_pos, __global float3 *gpu_speed)
 {
 	const int i = get_global_id(0); //in twee dimensies, dus twee teller's nodig
@@ -60,36 +69,37 @@ __kernel void calc_speed(__global float3 *gpu_pos, __global float3 *gpu_speed)
 
 	if (i == j)
 	{
-            return; //continue vervangen door return
+        return; //continue vervangen door return
 	}
-        float3 pos_a = gpu_pos[i];
-        float3 pos_b = gpu_pos[j];
+    float3 pos_a = gpu_pos[i];
+    float3 pos_b = gpu_pos[j];
 
-        float dist_x = (pos_a.s0 - pos_b.s0) * DISTANCE_TO_NEAREST_STAR;
-        float dist_y = (pos_a.s1 - pos_b.s1) * DISTANCE_TO_NEAREST_STAR;
-        float dist_z = (pos_a.s2 - pos_b.s2) * DISTANCE_TO_NEAREST_STAR;
-
-
-        float distance = sqrt(
-             dist_x * dist_x +
-             dist_y * dist_y +
-             dist_z * dist_z);
-
-        float force_x = -mass_grav * dist_x / (distance * distance * distance);
-        float force_y = -mass_grav * dist_y / (distance * distance * distance);
-        float force_z = -mass_grav * dist_z / (distance * distance * distance);
-
-        float acc_x = force_x / MASS_OF_SUN;
-        float acc_y = force_y / MASS_OF_SUN;
-        float acc_z = force_z / MASS_OF_SUN;
-
-        gpu_speed[i].s0 += acc_x * DELTA_TIME;
-        gpu_speed[i].s1 += acc_y * DELTA_TIME;
-        gpu_speed[i].s2 += acc_z * DELTA_TIME;
+    float dist_x = (pos_a.s0 - pos_b.s0) * DISTANCE_TO_NEAREST_STAR;
+    float dist_y = (pos_a.s1 - pos_b.s1) * DISTANCE_TO_NEAREST_STAR;
+    float dist_z = (pos_a.s2 - pos_b.s2) * DISTANCE_TO_NEAREST_STAR;
 
 
+    float distance = sqrt(
+         dist_x * dist_x +
+         dist_y * dist_y +
+         dist_z * dist_z);
+
+    float force_x = -mass_grav * dist_x / (distance * distance * distance);
+    float force_y = -mass_grav * dist_y / (distance * distance * distance);
+    float force_z = -mass_grav * dist_z / (distance * distance * distance);
+
+    float acc_x = force_x / MASS_OF_SUN;
+    float acc_y = force_y / MASS_OF_SUN;
+    float acc_z = force_z / MASS_OF_SUN;
+
+    gpu_speed[i].s0 += acc_x * DELTA_TIME;
+    gpu_speed[i].s1 += acc_y * DELTA_TIME;
+    gpu_speed[i].s2 += acc_z * DELTA_TIME;
 }
+
 //***************kernelcode voor atomische speedberekening******************************
+// Berekent de snelheid wel correct door de race condities op te vangen via atomische
+// operaties. Nadeel is de snelheidsvermindering omdat ze op elkaar wachten.
 __kernel void calc_speed_a(__global float3 *gpu_pos, __global float3_ *gpu_speed) //meegeven float3_ ipv float3! Geen conversie nodig hiervoor, zie union boven
 {
 	const int i = get_global_id(0); //zie boven
@@ -98,33 +108,31 @@ __kernel void calc_speed_a(__global float3 *gpu_pos, __global float3_ *gpu_speed
 
 	if (i == j)
 	{
-            return; //zie boven
-	}
-        float3 pos_a = gpu_pos[i];
-        float3 pos_b = gpu_pos[j];
+        return; //zie boven
+    }
 
-        float dist_x = (pos_a.s0 - pos_b.s0) * DISTANCE_TO_NEAREST_STAR;
-        float dist_y = (pos_a.s1 - pos_b.s1) * DISTANCE_TO_NEAREST_STAR;
-        float dist_z = (pos_a.s2 - pos_b.s2) * DISTANCE_TO_NEAREST_STAR;
+    float3 pos_a = gpu_pos[i];
+    float3 pos_b = gpu_pos[j];
+
+    float dist_x = (pos_a.s0 - pos_b.s0) * DISTANCE_TO_NEAREST_STAR;
+    float dist_y = (pos_a.s1 - pos_b.s1) * DISTANCE_TO_NEAREST_STAR;
+    float dist_z = (pos_a.s2 - pos_b.s2) * DISTANCE_TO_NEAREST_STAR;
 
 
-        float distance = sqrt(
-             dist_x * dist_x +
-             dist_y * dist_y +
-             dist_z * dist_z);
+    float distance = sqrt(
+         dist_x * dist_x +
+         dist_y * dist_y +
+         dist_z * dist_z);
 
-        float force_x = -mass_grav * dist_x / (distance * distance * distance);
-        float force_y = -mass_grav * dist_y / (distance * distance * distance);
-        float force_z = -mass_grav * dist_z / (distance * distance * distance);
+    float force_x = -mass_grav * dist_x / (distance * distance * distance);
+    float force_y = -mass_grav * dist_y / (distance * distance * distance);
+    float force_z = -mass_grav * dist_z / (distance * distance * distance);
 
-        float acc_x = force_x / MASS_OF_SUN;
-        float acc_y = force_y / MASS_OF_SUN;
-        float acc_z = force_z / MASS_OF_SUN;
+    float acc_x = force_x / MASS_OF_SUN;
+    float acc_y = force_y / MASS_OF_SUN;
+    float acc_z = force_z / MASS_OF_SUN;
 
 	AtomicAdd(&gpu_speed[i].arr[0], (float)acc_x * DELTA_TIME); //atomische toevoeging
-    	AtomicAdd(&gpu_speed[i].arr[1], (float)acc_y * DELTA_TIME);
-    	AtomicAdd(&gpu_speed[i].arr[2], (float)acc_z * DELTA_TIME);
-
-
-
+    AtomicAdd(&gpu_speed[i].arr[1], (float)acc_y * DELTA_TIME);
+    AtomicAdd(&gpu_speed[i].arr[2], (float)acc_z * DELTA_TIME);
 }
