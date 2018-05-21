@@ -49,7 +49,7 @@ Een update heeft dit probleem gelukkig verholpen.
     \item CPU: Intel(R) Core(TM) i7-4790 CPU @ 3.60Ghz
     \item GPU: Nvidia GTX 970
     \item RAM: 8GiB DDR3 @ 1866MHz
-    \item OS: Fedora KDE Plasma
+    \item OS: Fedora 27 KDE Plasma
 \end{itemize}
 
 %----------------------------------------------------------------------------------------
@@ -206,7 +206,7 @@ de gebruikte kernel.
     \item Deze zet beide atomische versies (for-lus 1 \& for-lus 0) samen.
 \end{enumerate}
 
-\textit{Opmerking}: Als de tijd gelijk is aan nul, betekent dit de tijd zo klein is
+\textit{Opmerking}: Als de tijd gelijk is aan nul, betekent dit dat de tijd zo klein is
 dat deze niet gemeten kon worden of dat het programma niet kon starten door een te
 hoog aantal lichamen.
 
@@ -222,8 +222,8 @@ overhead.
     \caption{Simulatietijd 5 lichamen}
 \end{figure}
 \subsection{50 lichamen}
-Vanaf 50 lichamen is de CPU nog steeds 2 - 3 keer sneller dan de GPU. Het aantal
-lichamen stijgt waardoor de overhead ten opzichte van de hoeveelheid data
+Met 50 lichamen is de CPU nog steeds 2 - 3 keer sneller dan de GPU. Het aantal
+lichamen is groter, waardoor de overhead ten opzichte van de hoeveelheid data
 is verminderd. De verschillen tussen de OpenCL varianten zijn niet erg groot op
 dit moment. Maar dit zal veranderen als het aantal lichamen nog stijgt.
 
@@ -239,7 +239,7 @@ om de gravitatie te simuleren dan de CPU.
 
 \begin{itemize}
     \item Kernel 1 en 2 zijn niet-atomisch uitgevoerd (zie \ref{hfd:niet-atomisch-for1} en \ref{hfd:niet-atomisch-for2}) waardoor kernel 2 zijn performantie hoger is dan zijn atomische variant.
-    Maar kernel 2 heeft last van \textit{race condities} wat dus foutieve resultaten oplevert.
+    Maar kernel 2 heeft last van \textit{race condities} wat dus foutieve resultaten oplevert. Dit maakt kernel 2 dus onbetrouwbaar.
     \item Kernel 3 lost de \textit{race condities} op van kernel 2, hierdoor is deze wel trager maar levert hij wel de juiste resultaten op.
     \item Kernel 4 is gelijkaardig aan kernel 1, de oorzaak hiervan is dat we de atomische operaties ook getest hebben op for-lus \ref{code:for2} (zie \ref{hfd:atomisch-for2}).
     Maar aangezien deze geen \textit{race condities} bevat, zien we ook geen verschil in performantie. Enkel de kleine for-lus \ref{code:for2} op de GPU draaien heeft dus weinig zin.
@@ -250,13 +250,13 @@ om de gravitatie te simuleren dan de CPU.
 
 \begin{figure}[H]
     \includegraphics[width=\linewidth]{./grafiekskes/hist_simulation500.png}
-    \caption{Simulatietijd 500 lichamen}
+    \caption{Simulatietijd bij 500 lichamen}
 \end{figure}
 
 \subsection{5~000 lichamen}
 \begin{figure}[H]
     \includegraphics[width=\linewidth]{./grafiekskes/hist_simulation5000.png}
-    \caption{Simulatietijd 5~000 lichamen}
+    \caption{Simulatietijd bij 5~000 lichamen}
 \end{figure}
 
 Hier zien we dezelfde trend als we reeds besproken hebben bij 500 lichamen (paragraaf \ref{hfd:lichamen-500}).
@@ -266,7 +266,7 @@ wat niet eg veel verbetering met zich meebrengt op vlak van performantie omdat d
 
 \begin{figure}[H]
     \includegraphics[width=\linewidth]{./grafiekskes/hist_transfer5000.png}
-    \caption{Transfertijd 5~000 lichamen}
+    \caption{Transfertijd bij 5~000 lichamen}
 \end{figure}
 
 % Nogal vreemd niet?? SIMON
@@ -291,9 +291,9 @@ op dat moment 100\% in gebruik. Het gevolg hiervan is dat de berekeningen in wac
 worden gezet tot de GPU klaar is voor de volgende taak.
 
 Deze kernels leveren echter wel een groot verschil op in simulatietijd ten opzichte van de CPU versie
-die bij 5~000 lichamen er al reeds 0.6 s over deed. Zij doen er slechts 0.9 s erover om
-50~000 lichamen uit te rekenen. Het aantal lichamen vertienvoudigt maar de
-simulatietijd stijgt slechts met 50\% ten opzichte van de CPU versie van 5~000 lichamen.
+die bij 5~000 lichamen er al reeds 0.6 s over deed, waar de GPU bij 50~000 lichamen 0.9 seconden nodig heeft.
+Het aantal lichamen vertienvoudigt maar de
+simulatietijd stijgt slechts met ongeveer 50\% ten opzichte van de CPU versie van 5~000 lichamen.
 
 Bij 500 000 lichamen geven deze kernels het helaas ook op en vereisen deze ook nog
 ingrijpende aanpassingen om de performantie te verhogen zoals we zullen bespreken in \ref{hfd:verbeteringen}.
@@ -319,7 +319,7 @@ niet ge\"{i}mplementeerd wegens tijdsgebrek.
 \subsection{Minder dataoverdrachten}
 \label{hfd:dataoverdrachten}
 Het programma kopieert nu telkens per OpenCL kernel de data van de host naar de GPU en
-omgekeerd. Dit resulteert in 4 dataoverdrachten, wat erg veel nutteloze
+omgekeerd. Dit resulteert in 4 dataoverdrachten bij onze 5de kernel, wat erg veel nutteloze
 overhead is, omdat beide for-lussen draaien als een aparte kernel.
 
 We zouden de for-lussen kunnen overzetten in \'{e}\'{e}n kernel waardoor de dataoverdrachten
@@ -328,7 +328,7 @@ worden gereduceerd tot slechts 2 overdrachten.
 \subsection{Effici\"{e}nt opsplitsen in werkgroepen}
 \label{hfd:werkgroepen}
 Beide for-lussen worden simpel weg op de GPU uitgevoerd zonder dat het algoritme
-geoptimaliseerd werd voor parrallelisme op de GPU. Dit resulteert in een slechter
+geoptimaliseerd werd voor parallellisme op de GPU. Dit resulteert in een slechter
 gebruik van het geheugen (globaal i.p.v. lokaal) waardoor de berekeningen trager
 kunnen verlopen door het geheugen bottleneck.
 
@@ -354,8 +354,8 @@ met de buren van elk workitem.
 %----------------------------------------------------------------------------------------
 \section{Conclusie}
 
-We hebben het n-body probleem stapsgewijs geprobeert te parallelliseren met behulp
-van OpenCL, dit is vrij aardig gelukt aangezien we met onze kernel 10 keer zoveel lichamen
+We hebben het n-body probleem stapsgewijs geprobeerd te parallelliseren met behulp
+van OpenCL. Dit is vrij aardig gelukt aangezien we met onze kernel 10 keer zoveel lichamen
 kan berekenen ten opzichte van de CPU versie zonder al veel te moeten inboeten op vlak
 van performantie. Tevens hebben we enkele mogelijke verbeteringen bekeken zodat we
 met onze kernel nog meer lichamen zouden kunnen berekenen.
