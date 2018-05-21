@@ -51,7 +51,7 @@ void simulate_gravity(cl_float3* host_pos, cl_float3* host_speed, cl_mem gpu_pos
     const float mass_grav = grav_constant * mass_of_sun * mass_of_sun;
     const float distance_to_nearest_star = 50;
 
- /* FOR LUS 1 
+ /* FOR LUS 1
     for (int i = 0; i < length; ++i)
     {
         for (int j = 0; j < length; ++j)
@@ -96,13 +96,14 @@ void simulate_gravity(cl_float3* host_pos, cl_float3* host_speed, cl_mem gpu_pos
 	ocl_err(clSetKernelArg(kernel, arg_num++, sizeof(cl_mem), &gpu_pos));
 	ocl_err(clSetKernelArg(kernel, arg_num++, sizeof(cl_mem), &gpu_speed));
 
+    // Kopieer buffers
 	ocl_err(clEnqueueWriteBuffer(g_command_queue, gpu_pos, CL_TRUE, 0, sizeof(cl_float3) * length,host_pos, 0, NULL, NULL)); // Enkel speed buffer bijgewerkt
 	ocl_err(clEnqueueWriteBuffer(g_command_queue, gpu_speed, CL_TRUE, 0, sizeof(cl_float3) * length,host_speed, 0, NULL, NULL));
 
-	// Call kernel 1D
+	// Call kernel 2D
 	size_t global_work_sizes[] = {length,length};
 	time_measure_start("computation");
-	ocl_err(clEnqueueNDRangeKernel(g_command_queue, kernel, DIMENSION, NULL, global_work_sizes, NULL, 0, NULL, NULL));
+	ocl_err(clEnqueueNDRangeKernel(g_command_queue, kernel, DIMENSION, NULL, global_work_sizes, NULL, 0, NULL, NULL)); // Stuur opdracht naar GPU
 	ocl_err(clFinish(g_command_queue));
 	printf("c:");
 	time_measure_stop_and_print("computation");
