@@ -41,7 +41,7 @@
 \subsection{Compilatieproblemen}
 
 De \texttt{GLM} package gaf bij compiletime een error wat
-ervoor zorgde dat de code niet gecompileerd kon worden in onze testomgeving. 
+ervoor zorgde dat de code niet gecompileerd kon worden in onze testomgeving.
 Een update heeft dit probleem gelukkig verholpen.
 
 \subsection{Hardware}
@@ -57,6 +57,7 @@ Een update heeft dit probleem gelukkig verholpen.
 %----------------------------------------------------------------------------------------
 \section{OpenCL aanpassingen}
 \subsection{Eerste for-lus}
+\label{hfd:niet-atomisch-for1}
 De eerste for-lus, die we geparalleliseerd hebben, berekent de nieuwe snelheid van een lichaam.
 Hiervoor moet de host de positie en snelheden data overbrengen naar de GPU, wachten tot de GPU
 klaar is en dan de nieuwe snelheden ophalen van de GPU.
@@ -100,6 +101,7 @@ for (int i = 0; i < length; ++i)
 \end{lstlisting}
 
 \subsection{Tweede for-lus}
+\label{hfd:niet-atomisch-for2}
 De tweede for-lus, die we geparalleliseerd hebben, berekent de nieuwe positie
 van elk lichaam. Hiervoor zal de host eerst de positie en snelheden overdragen
 naar de GPU, wachten tot de GPU klaar is en dan de nieuwe positie data ophalen
@@ -115,6 +117,7 @@ for(int i = 0; i < length; ++i)
 \end{lstlisting}
 
 \subsection{Atomische variant van de eerste for-lus}
+\label{hfd:atomisch-for1}
 Omdat het algoritme in for-lus \ref{code:for1} de afstand bepaalt
 tussen twee lichamen krijgen we een \textit{race conditie}. Het probleem situeert
 zich bij het feit dat een GPU processor de positie van lichaam A en lichaam B moet
@@ -148,6 +151,9 @@ elk lichaam en de andere lichamen:
     \item Maximale afstand
 \end{itemize}
 
+Helaas door tijdsgebrek hebben we deze niet volledig kunnen afwerken, daarom hebben
+we deze ook niet in onze testresultaten weergegeven.
+
 %----------------------------------------------------------------------------------------
 %	SECTION 3: RESULTS
 %----------------------------------------------------------------------------------------
@@ -159,18 +165,36 @@ categorie. Deze gemiddelden worden dan uitgezet op een aantal grafieken welke
 hieronder zullen worden besproken.
 
 \subsection{5 lichamen}
+\textit{Opmerking}: Als de tijd gelijk is aan nul, betekent dit de tijd zo klein is dat deze niet gemeten kon worden.
+\\
+Hier zien we duidelijk dat de CPU veel sneller is dan de GPU bij het berekenen van
+slechts 5 lichamen. De oorzaak is vrij duidelijk: de overhead bij het kopi\"{e}ren van
+de data van de host naar de GPU en terug zorgt ervoor dat de GPU hier tot 10 maal
+trager is dan de CPU. Ook het opstarten van de OpenCL interface zorgt voor enige
+overhead.
 \includegraphics[width=\textwidth]{grafiekskes/hist_simulation5.png}
 \subsection{50 lichamen}
+Vanaf 50 lichamen is de CPU nog steeds 2 - 3 keer sneller dan de GPU. Het aantal
+lichamen stijgt waardoor de overhead ten opzichte van de hoeveelheid data
+is verminderd.
 \includegraphics[width=\linewidth]{grafiekskes/hist_simulation50.png}
 \subsection{500 lichamen}
+Vanaf 500 lichamen bereiken we het breekpunt van de CPU, vanaf nu is de GPU sneller
+om de gravitatie te simuleren dan de CPU.
+
+\begin{itemize}
+    \item Kernel 1 en 2 zijn niet-atomisch uitgevoerd (zie \ref{hfd:niet-atomisch-for1} en \ref{hfd:niet-atomisch-for2}) waardoor hun snelheid hoger zijn dan hun atomische varianten.
+    Maar kernel 2 heeft last van race condities wat dus foutieve resultaten oplevert.
+    \item Kernel 3
+    \item
+\end{itemize}
+
 \includegraphics[width=\linewidth]{grafiekskes/hist_simulation500.png}
 \subsection{5 000 lichamen}
 \includegraphics[width=\linewidth]{grafiekskes/hist_simulation5000.png}
 \subsection{50 000 lichamen}
-opm: als de tijd gelijk is aan nul, betekent dit dat het programma weigerde te starten.
+\textit{Opmerking}: Als de tijd gelijk is aan nul, betekent dit dat het programma weigerde te starten.
 \includegraphics[width=\linewidth]{grafiekskes/hist_simulation50000.png}
-\subsection{500 000 lichamen}
-CPU faalt!
 
 %----------------------------------------------------------------------------------------
 %	SECTION 4: IMPROVEMENTS
