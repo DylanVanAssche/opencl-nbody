@@ -61,6 +61,9 @@ Een update heeft dit probleem gelukkig verholpen.
 De eerste for-lus, die we geparalleliseerd hebben, berekent de nieuwe snelheid van een lichaam.
 Hiervoor moet de host de positie en snelheden data overbrengen naar de GPU, wachten tot de GPU
 klaar is en dan de nieuwe snelheden ophalen van de GPU.
+\\
+\\
+\textit{Bestanden}: \texttt{n-body-2.c}, \texttt{kernel-2.cl}
 
 \begin{lstlisting}[caption={De eerste for-lus}, label={code:for1}, breaklines=true, basicstyle=\footnotesize]
 for (int i = 0; i < length; ++i)
@@ -106,6 +109,9 @@ De tweede for-lus, die we geparalleliseerd hebben, berekent de nieuwe positie
 van elk lichaam. Hiervoor zal de host eerst de positie en snelheden overdragen
 naar de GPU, wachten tot de GPU klaar is en dan de nieuwe positie data ophalen
 van de GPU.
+\\
+\\
+\textit{Bestanden}: \texttt{n-body-1.c}, \texttt{kernel-1.cl}
 
 \begin{lstlisting}[caption={De tweede for-lus}, label={code:for2}, breaklines=true, basicstyle=\footnotesize]
 for(int i = 0; i < length; ++i)
@@ -119,7 +125,7 @@ for(int i = 0; i < length; ++i)
 \subsection{Atomische variant van de eerste for-lus}
 \label{hfd:atomisch-for1}
 Omdat het algoritme in for-lus \ref{code:for1} de afstand bepaalt
-tussen twee lichamen krijgen we een \textit{race conditie}. Het probleem situeert
+tussen 2 lichamen krijgen we een \textit{race conditie}. Het probleem situeert
 zich bij het feit dat een GPU processor de positie van lichaam A en lichaam B moet
 lezen om de afstand van lichaam B tot lichaam A te vinden. De kans bestaat dat een
 andere GPU processor net de positie van lichaam A aan het wijzigen is terwijl deze
@@ -133,13 +139,27 @@ nadeel van deze methode is dat de performantie zal dalen omdat de processor blij
 wachten tot een andere processor klaar is met zijn dataoverdracht. OpenCL ondersteunt
 dit niet rechtstreeks maar via een omweg (via een \texttt{union}) kunnen we toch
 gebruik maken van \textit{atomische operaties}.
+\\
+\\
+\textit{Bestanden}: \texttt{n-body-3.c}, \texttt{kernel-3.cl}
+
+\subsection{Atomische variant van de tweede for-lus}
+\label{hfd:atomisch-for2}
+Ondanks dat for-lus \ref{code:for2} geen \textit{race condities} bevat hebben we
+toch eens de invloed van atomische operaties op deze for-lus getest.
+\\
+\\
+\textit{Bestanden}: \texttt{n-body-4.c}, \texttt{kernel-4.cl}
 
 \subsection{Combinatie van beide for-lussen}
 \label{hfd:combinatie-lussen}
-Hierbij hebben we de twee bovenstaande for-lussen (atomische for-lus \ref{code:for1} en for-lus \ref{code:for2}) gecombineerd tot \'{e}\'{e}n
+Hierbij hebben we de 2 bovenstaande for-lussen (atomische for-lus \ref{code:for1} en for-lus \ref{code:for2}) gecombineerd tot \'{e}\'{e}n
 OpenCL programma. Beide lussen staan nog steeds in een aparte kernel. Indien we
 deze nog zouden combineren tot \'{e}\'{e}n kernel zouden we waarschijnlijk de
 performantie nog kunnen verbeteren (zie \ref{hfd:dataoverdrachten}).
+\\
+\\
+\textit{Bestanden}: \texttt{n-body-5.c}, \texttt{kernel-5.cl}
 
 \subsection{Afstanden}
 Een extra uitbreiding aan het programma was het opvragen van de afstanden tussen
@@ -151,8 +171,16 @@ elk lichaam en de andere lichamen:
     \item Maximale afstand
 \end{itemize}
 
+Ook hier hebben we opnieuw last van \textit{race condities} waardoor we deze ook
+atomisch zouden moeten uitvoeren of door elk lichaam een volledig array te geven
+om zijn data in op te slaan. Daarna kan er in een aparte kernel dan al deze data
+samengevoegd worden.
+
 Helaas door tijdsgebrek hebben we deze niet volledig kunnen afwerken, daarom hebben
 we deze ook niet in onze testresultaten weergegeven.
+\\
+\\
+\textit{Bestanden}: \texttt{n-body-6.c}, \texttt{kernel-6.cl}
 
 %----------------------------------------------------------------------------------------
 %	SECTION 3: RESULTS
@@ -167,61 +195,123 @@ hieronder zullen worden besproken.
 Op de x-as van de volgende grafieken staat steeds het gebruikte programma en
 de gebruikte kernel.
 \begin{enumerate}
- \setcounter{enumi}{-1}
- \item De waarden gemeten bij de cpu. Hier is enkel de simulationtijd kunnen gemeten worden.
- \item Deze vervangt de tweede for-lus, en doet dit niet atomisch.
- \item Deze vervangt de eerste for-lus, en doet dit ook niet atomisch. Dit zorgt voor
- racecondities waardoor dit programma eigenlijk niet betrouwbaar is
- \item Deze vervangt de eerste for-lus, maar doet dit wel atomisch.
- \item Deze vervangt de tweede for-lus door een atomische variant, hoewel dit helemaal niet
- nodig is aangezien er geen racecondities zijn in deze lus.
- \item Deze zet beide atomische versies (for-lus 1 \& for-lus 0) samen.
- \end{enumerate}
+\setcounter{enumi}{-1}
+    \item De waarden gemeten bij de CPU. Hier is enkel de simulationtijd kunnen gemeten worden.
+    \item Deze vervangt de tweede for-lus, en doet dit niet atomisch.
+    \item Deze vervangt de eerste for-lus, en doet dit ook niet atomisch. Dit zorgt voor
+    racecondities waardoor dit programma eigenlijk niet betrouwbaar is
+    \item Deze vervangt de eerste for-lus, maar doet dit wel atomisch.
+    \item Deze vervangt de tweede for-lus door een atomische variant, hoewel dit helemaal niet
+    nodig is aangezien er geen racecondities zijn in deze lus.
+    \item Deze zet beide atomische versies (for-lus 1 \& for-lus 0) samen.
+\end{enumerate}
 
+\textit{Opmerking}: Als de tijd gelijk is aan nul, betekent dit de tijd zo klein is
+dat deze niet gemeten kon worden of dat het programma niet kon starten door een te
+hoog aantal lichamen.
 
 \subsection{5 lichamen}
-\textit{Opmerking}: Als de tijd gelijk is aan nul, betekent dit de tijd zo klein is dat deze niet gemeten kon worden.
-\\
+
 Hier zien we duidelijk dat de CPU veel sneller is dan de GPU bij het berekenen van
 slechts 5 lichamen. De oorzaak is vrij duidelijk: de overhead bij het kopi\"{e}ren van
 de data van de host naar de GPU en terug zorgt ervoor dat de GPU hier tot 10 maal
 trager is dan de CPU. Ook het opstarten van de OpenCL interface zorgt voor enige
 overhead.
-\includegraphics[width=\textwidth]{grafiekskes/hist_simulation5.png}
+\begin{figure}[H]
+    \includegraphics[width=\linewidth]{./grafiekskes/hist_simulation5.png}
+    \caption{Simulatietijd 5 lichamen}
+\end{figure}
 \subsection{50 lichamen}
 Vanaf 50 lichamen is de CPU nog steeds 2 - 3 keer sneller dan de GPU. Het aantal
 lichamen stijgt waardoor de overhead ten opzichte van de hoeveelheid data
-is verminderd.
-\includegraphics[width=\linewidth]{grafiekskes/hist_simulation50.png}
+is verminderd. De verschillen tussen de OpenCL varianten zijn niet erg groot op
+dit moment. Maar dit zal veranderen als het aantal lichamen nog stijgt.
+
+\begin{figure}[H]
+    \includegraphics[width=\linewidth]{./grafiekskes/hist_simulation50.png}
+    \caption{Simulatietijd 50 lichamen}
+\end{figure}
+
 \subsection{500 lichamen}
+\label{hfd:lichamen-500}
 Vanaf 500 lichamen bereiken we het breekpunt van de CPU, vanaf nu is de GPU sneller
 om de gravitatie te simuleren dan de CPU.
 
 \begin{itemize}
-    \item Kernel 1 en 2 zijn niet-atomisch uitgevoerd (zie \ref{hfd:niet-atomisch-for1} en \ref{hfd:niet-atomisch-for2}) waardoor hun snelheid hoger zijn dan hun atomische varianten.
-    Maar kernel 2 heeft last van race condities wat dus foutieve resultaten oplevert.
-    \item Kernel 3
-    \item
+    \item Kernel 1 en 2 zijn niet-atomisch uitgevoerd (zie \ref{hfd:niet-atomisch-for1} en \ref{hfd:niet-atomisch-for2}) waardoor kernel 2 zijn performantie hoger is dan zijn atomische variant.
+    Maar kernel 2 heeft last van \textit{race condities} wat dus foutieve resultaten oplevert.
+    \item Kernel 3 lost de \textit{race condities} op van kernel 2, hierdoor is deze wel trager maar levert hij wel de juiste resultaten op.
+    \item Kernel 4 is gelijkaardig aan kernel 1, de oorzaak hiervan is dat we de atomische operaties ook getest hebben op for-lus \ref{code:for2} (zie \ref{hfd:atomisch-for2}).
+    Maar aangezien deze geen \textit{race condities} bevat, zien we ook geen verschil in performantie. Enkel de kleine for-lus \ref{code:for2} op de GPU draaien heeft dus weinig zin.
+    \item Kernel 5 presteert duidelijk beter als zijn voorgangers. Door de combinatie te maken van beide for-lussen (zie \ref{hfd:combinatie-lussen}) verkrijgen we een betere performantie
+    omdat alles op de GPU berekent werd. Deze kernel combineert eigenlijk kernel 3 en 4 waardoor het aantal dataoverdrachten stijgt.
+    Deze zouden we nog kunnen optimaliseren, hierover later meer in paragraaf \ref{hfd:dataoverdrachten}.
 \end{itemize}
 
-\includegraphics[width=\linewidth]{grafiekskes/hist_simulation500.png}
-\subsection{5 000 lichamen}
-\includegraphics[width=\linewidth]{grafiekskes/hist_simulation5000.png}
-\includegraphics[width=\linewidth]{grafiekskes/hist_transfer5000.png}
-\subsection{50 000 lichamen}
-\textit{Opmerking}: Als de tijd gelijk is aan nul, betekent dit dat het programma weigerde te starten.
-\includegraphics[width=\linewidth]{grafiekskes/hist_simulation50000.png}
-\includegraphics[width=\linewidth]{grafiekskes/hist_transfer50000.png}
+\begin{figure}[H]
+    \includegraphics[width=\linewidth]{./grafiekskes/hist_simulation500.png}
+    \caption{Simulatietijd 500 lichamen}
+\end{figure}
+
+\subsection{5~000 lichamen}
+\begin{figure}[H]
+    \includegraphics[width=\linewidth]{./grafiekskes/hist_simulation5000.png}
+    \caption{Simulatietijd 5~000 lichamen}
+\end{figure}
+
+Hier zien we dezelfde trend als we reeds besproken hebben bij 500 lichamen (paragraaf \ref{hfd:lichamen-500}).
+De kernels 2, 3 en 5 zijn beduidend sneller dan de CPU versie en kernels 1 en 4. Kernel 2 mogen we niet rekenen als
+sneller omdat deze foutieve resultaten oplevert. Kernel 1 en 4 parallelliseren de kleine for-lus \ref{code:for2}
+wat niet eg veel verbetering met zich meebrengt op vlak van performantie omdat de bewerking te kort is.
+
+\begin{figure}[H]
+    \includegraphics[width=\linewidth]{./grafiekskes/hist_transfer5000.png}
+    \caption{Transfertijd 5~000 lichamen}
+\end{figure}
+
+% Nogal vreemd niet?? SIMON
+
+% Zeveren over overdrachttijd van andere kernels?? SIMON
+We zien duidelijk dat de transfertijd van kernel 4 veel meer is dan kernel 1.
+\\
+\\
+\textit{Opmerking}: Er is geen transfertijd gemeten bij de CPU versie omdat er geen overdracht plaats vindt.
+
+\subsection{50~000 lichamen}
+\begin{figure}[H]
+    \includegraphics[width=\linewidth]{./grafiekskes/hist_simulation50000.png}
+    \caption{Simulatietijd 50~000 lichamen}
+\end{figure}
+
+Vanaf 50~000 lichamen kunnen de CPU versie 0 en kernels 1 en 4 niet meer opstarten.
+Kernels 3 en 5 leveren daarentegen nog steeds een uitstekende performantie, op
+slechts 0.9 seconden kunnen zij de 50~000 lichamen berekenen. Dit is wel 100 maal
+trager dan bij 5~000 lichamen, de oorzaak hiervan is de GPU hardware zelf. Deze was
+op dat moment 100\% in gebruik. Het gevolg hiervan is dat de berekeningen in wachtrij
+worden gezet tot de GPU klaar is voor de volgende taak.
+
+Deze kernels leveren echter wel een groot verschil op in simulatietijd ten opzichte van de CPU versie
+die bij 5~000 lichamen er al reeds 0.6 s over deed. Zij doen er slechts 0.9 s erover om
+50~000 lichamen uit te rekenen. Het aantal lichamen vertienvoudigt maar de
+simulatietijd stijgt slechts met 50\% ten opzichte van de CPU versie van 5~000 lichamen.
+
+Bij 500 000 lichamen geven deze kernels het helaas ook op en vereisen deze ook nog
+ingrijpende aanpassingen om de performantie te verhogen zoals we zullen bespreken in \ref{hfd:verbeteringen}.
+
+\begin{figure}[H]
+    \includegraphics[width=\linewidth]{./grafiekskes/hist_transfer50000.png}
+    \caption{Transfertijd 50~000 lichamen}
+\end{figure}
 
 Hier is heel duidelijk ook hoeveel impact de transfersnelheid heeft op het programma.
-Tussen 5000 en 50000 bodies is de transfertijd soms 5 keer groter.
-\subsection{500 000 lichamen}
-CPU faalt!
+Tussen 5000 en 50000 bodies is de transfertijd soms 5 keer groter doordat er mee data
+van en naar GPU gekopieerd moet worden.
 
 %----------------------------------------------------------------------------------------
 %	SECTION 4: IMPROVEMENTS
 %----------------------------------------------------------------------------------------
 \section{Mogelijke verbeteringen}
+\label{hfd:verbeteringen}
 Het is nog mogelijk om de laatste versie van het programma nog te versnellen door
 gebruik te maken van nog enkele OpenCL functies en ontwerppatronen. Deze werden
 niet ge\"{i}mplementeerd wegens tijdsgebrek.
@@ -229,11 +319,11 @@ niet ge\"{i}mplementeerd wegens tijdsgebrek.
 \subsection{Minder dataoverdrachten}
 \label{hfd:dataoverdrachten}
 Het programma kopieert nu telkens per OpenCL kernel de data van de host naar de GPU en
-omgekeerd. Dit resulteert in vier dataoverdrachten, wat erg veel nutteloze
+omgekeerd. Dit resulteert in 4 dataoverdrachten, wat erg veel nutteloze
 overhead is, omdat beide for-lussen draaien als een aparte kernel.
 
 We zouden de for-lussen kunnen overzetten in \'{e}\'{e}n kernel waardoor de dataoverdrachten
-worden gereduceerd tot slechts twee overdrachten.
+worden gereduceerd tot slechts 2 overdrachten.
 
 \subsection{Effici\"{e}nt opsplitsen in werkgroepen}
 \label{hfd:werkgroepen}
@@ -264,5 +354,9 @@ met de buren van elk workitem.
 %----------------------------------------------------------------------------------------
 \section{Conclusie}
 
+We hebben het n-body probleem stapsgewijs geprobeert te parallelliseren met behulp
+van OpenCL, dit is vrij aardig gelukt aangezien we met onze kernel 10 keer zoveel lichamen
+kan berekenen ten opzichte van de CPU versie zonder al veel te moeten inboeten op vlak
+van performantie.
 %----------------------------------------------------------------------------------------
 \end{document}
