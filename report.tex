@@ -40,15 +40,15 @@
 \section{Testomgeving}
 \subsection{Compilatieproblemen}
 
-De \texttt{GLM} package gaf bij compiletime een error wat
+Het \texttt{GLM} package gaf bij compiletime een foutmelding wat
 ervoor zorgde dat de code niet gecompileerd kon worden in onze testomgeving.
 Een update heeft dit probleem gelukkig verholpen.
 
 \subsection{Hardware}
 \begin{itemize}
-    \item CPU: Intel(R) Core(TM) i7-4790 CPU @ 3.60Ghz
+    \item CPU: Intel(R) Core(TM) i7-4790 CPU @ 3.60 Ghz
     \item GPU: Nvidia GTX 970
-    \item RAM: 8GiB DDR3 @ 1866MHz
+    \item RAM: 8 GiB DDR3 @ 1866 MHz
     \item OS: Fedora 27 KDE Plasma
 \end{itemize}
 
@@ -177,7 +177,7 @@ om zijn data in op te slaan. Daarna kan er in een aparte kernel dan al deze data
 samengevoegd worden.
 
 Helaas door tijdsgebrek hebben we deze niet volledig kunnen afwerken, daarom hebben
-we deze ook niet in onze testresultaten weergegeven.
+we deze dan ook niet in onze testresultaten opgenomen.
 \\
 \\
 \textit{Bestanden}: \texttt{n-body-6.c}, \texttt{kernel-6.cl}
@@ -193,7 +193,7 @@ categorie. Deze gemiddelden worden dan uitgezet op een aantal grafieken welke
 hieronder zullen worden besproken.
 
 Op de x-as van de volgende grafieken staat steeds het gebruikte programma en
-de gebruikte kernel.
+de gebruikte kernel. We hebben een zestal verschillende programma's met elkaar vergeleken:
 \begin{enumerate}
 \setcounter{enumi}{-1}
     \item De waarden gemeten bij de CPU. Hier is enkel de simulationtijd kunnen gemeten worden.
@@ -205,6 +205,8 @@ de gebruikte kernel.
     nodig is aangezien er geen racecondities zijn in deze lus.
     \item Deze zet beide atomische versies (for-lus 1 \& for-lus 0) samen.
 \end{enumerate}
+
+Op de y-as staat telkens de tijd die de operatie nodig had per programma.
 
 \textit{Opmerking}: Als de tijd gelijk is aan nul, betekent dit dat de tijd zo klein is
 dat deze niet gemeten kon worden of dat het programma niet kon starten door een te
@@ -319,8 +321,8 @@ niet ge\"{i}mplementeerd wegens tijdsgebrek.
 \subsection{Minder dataoverdrachten}
 \label{hfd:dataoverdrachten}
 Het programma kopieert nu telkens per OpenCL kernel de data van de host naar de GPU en
-omgekeerd. Dit resulteert in 4 dataoverdrachten bij onze 5de kernel, wat erg veel nutteloze
-overhead is, omdat beide for-lussen draaien als een aparte kernel.
+omgekeerd. Dit resulteert in 4 dataoverdrachten bij onze 5\textsuperscript{de} kernel,
+wat erg veel nutteloze overhead is, omdat beide for-lussen draaien als een aparte kernel.
 
 We zouden de for-lussen kunnen overzetten in \'{e}\'{e}n kernel waardoor de dataoverdrachten
 worden gereduceerd tot slechts 2 overdrachten.
