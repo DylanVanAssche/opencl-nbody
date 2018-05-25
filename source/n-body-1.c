@@ -1,6 +1,6 @@
 /*
 Simon Vandevelde, Dylan Van Assche
-2de for lus parralleliseren zonder atomische operaties
+2de for lus paralleliseren zonder atomische operaties
 */
 #include <stdio.h>
 #include <string.h>
@@ -32,12 +32,20 @@ cl_mem makeBufferOnGPU(int length)
 	// Make 2D buffer die leeg is
     cl_mem buffer = clCreateBuffer(
 			g_context,
-            CL_MEM_READ_WRITE,
+            CL_MEM_READ_WRITE,	//we moeten zowel kunnen lezen als schrijven in de buffer
             sizeof(cl_float3) * length,
 			NULL,
 			&error
 		);
 
+//
+//cl_mem clCreateBuffer ( 	cl_context context,
+//  	cl_mem_flags flags,
+// 	size_t size,
+//  	void *host_ptr, 	//eventuele pointer naar reeds bestaande buffer (moet even groot of groter zijn dan size)
+//  	cl_int *errcode_ret)
+//
+//
 	// Set error location code
     ocl_err(error);
 
@@ -115,14 +123,38 @@ void simulate_gravity(cl_float3* host_pos, cl_float3* host_speed, cl_mem gpu_pos
     ocl_err(clSetKernelArg(kernel, arg_num++, sizeof(cl_mem), &gpu_pos));
 	ocl_err(clSetKernelArg(kernel, arg_num++, sizeof(cl_mem), &gpu_speed));
 
+
     // Kopieer buffers
     ocl_err(clEnqueueWriteBuffer(g_command_queue, gpu_pos, CL_TRUE, 0, sizeof(cl_float3) * length,host_pos, 0, NULL, NULL));
     ocl_err(clEnqueueWriteBuffer(g_command_queue, gpu_speed, CL_TRUE, 0, sizeof(cl_float3) * length,host_speed, 0, NULL, NULL)); // enkel pos is bijgewerkt
+
+//
+// cl_int clEnqueueWriteBuffer ( 	cl_command_queue command_queue,
+//  	cl_mem buffer,
+//  	cl_bool blocking_write,		//wachten op volledige transfer
+//  	size_t offset,			//bufferoffset
+//  	size_t cb,			//buffersize
+//  	const void *ptr,		//pointer naar de te overschrijven data die zich op host bevindt
+//  	cl_uint num_events_in_wait_list,//wachtrij aanmaken
+// 	const cl_event *event_wait_list,//bv wachten tot andere operatie klaar is
+//  	cl_event *event)		//om de status van een event op te vragen
+//
 
     // Call kernel 1D
     size_t global_work_sizes[] = {length};
     time_measure_start("computation");
     ocl_err(clEnqueueNDRangeKernel(g_command_queue, kernel, DIMENSION, NULL, global_work_sizes, NULL, 0, NULL, NULL)); // Stuur opdracht naar GPU
+
+// cl_int clEnqueueNDRangeKernel ( 	cl_command_queue command_queue,
+//  	cl_kernel kernel,		//kernel die we willen runnen
+//  	cl_uint work_dim,		//dimensie van work-items
+//  	const size_t *global_work_offset, //moet altijd null zijn volgens documentatie
+//  	const size_t *global_work_size,	//pointer naar array die het aantal global_work-items beschrijven
+//  	const size_t *local_work_size, //pointer naar array die het aantal lobal_work-items beschrijven
+//  	cl_uint num_events_in_wait_list, //wachtrij 
+//  	const cl_event *event_wait_list,
+// 	cl_event *event)		//event om te pollen
+
     ocl_err(clFinish(g_command_queue)); // wacht tot GPU klaar is
 	printf("c:");
     time_measure_stop_and_print("computation");
@@ -130,6 +162,7 @@ void simulate_gravity(cl_float3* host_pos, cl_float3* host_speed, cl_mem gpu_pos
     // Read result
     time_measure_start("data_transfer");
     ocl_err(clEnqueueReadBuffer(g_command_queue, gpu_pos, CL_TRUE, 0, sizeof(cl_float3) * length, host_pos, 0, NULL, NULL)); // Lees GPU data naar host
+//werkt zoals de writebuffer, maar dan in de andere richting
     printf("d:");
     time_measure_stop_and_print("data_transfer");
 }
