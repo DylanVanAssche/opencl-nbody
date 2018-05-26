@@ -24,9 +24,4 @@ _As you can see, the 3rd and 5th kernels are still running smoothly with only a 
 
 :bulb: If we had more time, we could optimize several things for the 5th kernel like: data transfers, memory types, ... to icnrease the performance.
 
-## Build instructions
-
-1. Clone this repo using `git clone`.
-2. Enter the directory: `cd opencl-nbody`
-3. Set the right kernel and n-body mode in the MakeFile and run `make`
-4. Launch it: `./n-body [NUMBER OF BODIES]`
+:warning: Not all files are included in this repository due the fact that they are not written by us and we don't have the permission to publish them.
