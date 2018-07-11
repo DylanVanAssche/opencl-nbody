@@ -22,6 +22,6 @@ We tested several methods and OpenCL kernels, we hit the limit with our current 
 
 _As you can see, the 3rd and 5th kernels are still running smoothly with only a frame time of 0.9 seconds! The CPU calculated 5 000 bodies in 0.6 seconds. You can find more benchmarks in `report.pdf` (Dutch only)._
 
-:bulb: If we had more time, we could optimize several things for the 5th kernel like: data transfers, memory types, ... to icnrease the performance.
+:bulb: If we had more time, we could optimize several things for the 5th kernel like: data transfers, memory types, ... to increase the performance.
 
 :warning: Not all files are included in this repository due the fact that they are not written by us and we don't have the permission to publish them.
